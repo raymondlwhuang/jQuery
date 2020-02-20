@@ -95,55 +95,24 @@ myDemo.prototype.validate =	function (s) {
 	let rgx = /^[0-9]*\.?[0-9]*$/;
 	return s ? s.match(rgx) : null;
 }
-myDemo.prototype.getRate = function(indicator) {
+myDemo.prototype.getReq = function(indicator,flag = 'rate') {
 	let base_list = document.getElementById('base_list'+indicator);
 	let target_list = document.getElementById('target_list'+indicator);
 	let base=base_list.options[base_list.selectedIndex].text;
 	let target = target_list.options[target_list.selectedIndex].text;
+
+
 	if(base!=target) {
-		  let xhttp = new XMLHttpRequest();
-		  xhttp.onreadystatechange = function() {
-			if (this.readyState == 4 && this.status == 200) {
-			  let obj = JSON.parse(this.responseText);
-				for (let key in obj) {
-				  if (obj.hasOwnProperty(key) && key=='rates') {
-
-					  alert('Demo currency exchange rate is : '+ obj[key][target]);
-				  }
-				}		  
-
-			}
-		  };
-		  xhttp.open("GET", "http://data.fixer.io/api/latest?access_key=2b81c7684c1d1d43f49d4561e04c3a76&base="+base+"&symbols="+target, true);
-		  xhttp.send();				
+		fetch("http://data.fixer.io/api/latest?access_key=2b81c7684c1d1d43f49d4561e04c3a76&base="+base +"&symbols="+target)
+		.then((response) => !response.ok ? Error(response.statusText) : response.json())
+		.then(data => {
+			if(flag != 'rate')
+				alert('Demo currency exchange rate is : '+ data.rates[target]);
+			else 
+				document.getElementById("pair_targ_input"+indicator).value = (document.getElementById("pair_base_input"+indicator).value * data.rates[target]).toFixed(2);
+		})
+		.catch(error =>console.log(error));
 	}
-}
-
-myDemo.prototype.getResult = function(indicator) {
-  let base_list = document.getElementById('base_list'+indicator);
-  let target_list = document.getElementById('target_list'+indicator);
-  let base=base_list.options[base_list.selectedIndex].text;
-  let target = target_list.options[target_list.selectedIndex].text;
-  if(base!=target) {
-	  let xhttp = new XMLHttpRequest();
-	  xhttp.onreadystatechange = function() {
-		if (this.readyState == 4 && this.status == 200) {
-		  let obj = JSON.parse(this.responseText);
-			for (let key in obj) {
-			  if (obj.hasOwnProperty(key) && key=='rates') {
-
-				  document.getElementById("pair_targ_input"+indicator).value = (document.getElementById("pair_base_input"+indicator).value * obj[key][target]).toFixed(2);
-			  }
-			}		  
-
-		}
-	  };
-	  xhttp.open("GET", "http://data.fixer.io/api/latest?access_key=2b81c7684c1d1d43f49d4561e04c3a76");
-	  xhttp.send();		  
-  }
-  else {
-	document.getElementById("pair_targ_input"+indicator).value = document.getElementById("pair_base_input"+indicator).value;
-  }
 }
 
 myDemo.prototype.addListener = function  (){
@@ -153,16 +122,23 @@ myDemo.prototype.addListener = function  (){
 		let base_list = document.getElementById("base_list"+i);
 		let target_list = document.getElementById("target_list"+i);
 		let Disclaimer = document.getElementById("Disclaimer"+i);
-	   input.addEventListener('blur', ()=>this.getResult(i));
+	   input.addEventListener('blur', ()=>this.getReq(i,'result'));
 	   input.addEventListener('keyup', () =>{
 			if (!this.validate(this.value)) {
 				this.value = '';
 				return false;
 			}
 	   });	   
-	   base_list.addEventListener('change', ()=> this.getResult(i)); 
-	   Disclaimer.addEventListener('click', ()=>this.getRate(i));	   
-	   target_list.addEventListener('change', ()=>  this.getResult(i));    
+	   base_list.addEventListener('change', ()=> this.getReq(i,'result')); 
+	   Disclaimer.addEventListener('click', ()=>this.getReq(i));	  
+/*		//without using arrow function
+	   Disclaimer.addEventListener('click', (function(i, Disclaimer) {
+		 return function() {
+		   this.getRate(i);
+		 }
+	   })(i, Disclaimer)); 
+*/
+	   target_list.addEventListener('change', ()=>  this.getReq(i,'result'));    
 
 	});
 
@@ -190,4 +166,18 @@ myDemo.prototype.create = function(){
 }
 const myDemo1 = new myDemo('widget-needed','widget-container','required-widget');
 myDemo1.create();
+ fetch("http://data.fixer.io/api/latest?access_key=2b81c7684c1d1d43f49d4561e04c3a76")
+     .then(function(response) {
+ 		console.log('t1');
+         if (!response.ok) {
+             throw Error(response.statusText);
+ 		}
+ 		console.log('t2');
+         return response.json();
+     }).then(function(data) {
+ 		console.log('t3');
+         console.log(data)
+     }).catch(function(error) {
+         console.log(error);
+ 	});
 
